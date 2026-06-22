@@ -21,6 +21,7 @@
     enabled: true,
     allowlist: [],
     customRules: { strip: [], keep: [], prefixes: [] },
+    perDomainRules: {},
   };
   let sessionStats = { urlsCleaned: 0, paramsRemoved: 0 };
 
@@ -29,7 +30,7 @@
   // ---------------------------------------------------------------------------
   function loadSettings() {
     chrome.storage.local.get(
-      ["enabled", "allowlist", "customStrip", "customKeep", "customPrefixes"],
+      ["enabled", "allowlist", "customStrip", "customKeep", "customPrefixes", "perDomainRules"],
       (data) => {
         settings.enabled = data.enabled !== false;
         settings.allowlist = Array.isArray(data.allowlist) ? data.allowlist : [];
@@ -38,6 +39,9 @@
           keep: Array.isArray(data.customKeep) ? data.customKeep : [],
           prefixes: Array.isArray(data.customPrefixes) ? data.customPrefixes : [],
         };
+        settings.perDomainRules = (data.perDomainRules && typeof data.perDomainRules === "object")
+          ? data.perDomainRules : {};
+        // Apply global custom rules to DB (per-domain rules applied per-host in rewriteAnchor)
         LC.setCustomRules(settings.customRules);
       }
     );
@@ -46,11 +50,12 @@
 
   // Track cleanable count for page action badge
   let cleanableCount = 0;
+  let onAllowlistedDomain = false;
 
   function reportBadge() {
     try {
       chrome.runtime.sendMessage(
-        { type: "cleanable-count", count: cleanableCount },
+        { type: "cleanable-count", count: cleanableCount, allowlisted: onAllowlistedDomain },
         () => void chrome.runtime.lastError
       );
     } catch (_) { /* ignore */ }
@@ -83,6 +88,11 @@
       LC.setCustomRules(settings.customRules);
       rewriteAllAnchors(true);
     }
+    if ("perDomainRules" in changes) {
+      settings.perDomainRules = (changes.perDomainRules.newValue && typeof changes.perDomainRules.newValue === "object")
+        ? changes.perDomainRules.newValue : {};
+      rewriteAllAnchors(true);
+    }
   });
 
   // ---------------------------------------------------------------------------
@@ -105,7 +115,7 @@
       return;
     }
 
-    const result = LC.cleanUrl(anchor.href, settings.allowlist);
+    const result = LC.cleanUrl(anchor.href, settings.allowlist, null, settings.customRules, settings.perDomainRules);
     if (!result) return;
     if (!result.changed) {
       anchor.dataset.linkCleaned = "1";
@@ -134,6 +144,17 @@
   function rewriteAllAnchors(force) {
     if (!settings.enabled) return;
     resetCounter();
+
+    // Detect allowlisted domain for badge styling
+    try {
+      onAllowlistedDomain = settings.allowlist.some((p) => {
+        const host = location.hostname.toLowerCase();
+        if (p.startsWith("*.")) return host.endsWith("." + p.slice(2));
+        if (p.startsWith(".")) return host === p.slice(1) || host.endsWith(p);
+        return host === p;
+      });
+    } catch (_) { onAllowlistedDomain = false; }
+
     const anchors = document.querySelectorAll("a[href]");
     anchors.forEach((a) => rewriteAnchor(a, force));
     reportBadge();
@@ -150,7 +171,7 @@
       if (!link) return;
 
       const original = link.href;
-      const result = LC.cleanUrl(original, settings.allowlist);
+      const result = LC.cleanUrl(original, settings.allowlist, null, settings.customRules, settings.perDomainRules);
       if (!result || !result.changed) return;
 
       // The href should already be cleaned by the mutation observer.
@@ -168,7 +189,7 @@
   const originalOpen = window.open;
   window.open = function (url, ...rest) {
     if (url && settings.enabled) {
-      const result = LC.cleanUrl(url, settings.allowlist);
+      const result = LC.cleanUrl(url, settings.allowlist, null, settings.customRules, settings.perDomainRules);
       if (result && result.changed) url = result.cleaned;
     }
     return originalOpen.call(this, url, ...rest);
@@ -183,7 +204,7 @@
       const original = window.location[method].bind(window.location);
       window.location[method] = function (url) {
         if (url && settings.enabled) {
-          const result = LC.cleanUrl(url, settings.allowlist);
+          const result = LC.cleanUrl(url, settings.allowlist, null, settings.customRules, settings.perDomainRules);
           if (result && result.changed) url = result.cleaned;
         }
         return original(url);

@@ -5,6 +5,50 @@ All notable changes to Link Cleaner will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-06-22
+
+### Added
+- **i18n module** (`src/i18n.js`) — English + Indonesian (auto-detect via `navigator.language`).
+  Use `window.LinkCleaner.i18n.t(key, ...args)` for `%s`/`%d` substitutions.
+- **Statistics dashboard with 7-day bar chart** in Options → General.
+  Tracks per-day URL/param counts, renders pure-SVG chart (no charting lib).
+- **Per-domain rule overrides** (Options → Per-domain tab).
+  Domain-specific `strip`/`keep`/`prefixes` rules that REPLACE global rules
+  for matching hosts (with wildcard support: `*.example.com`).
+- **Toolbar icon variant for allowlisted pages** — badge shows `✓` (gray) when
+  on a domain where cleaning is disabled, instead of the cleanable count.
+- **New keyboard shortcuts**:
+  - `Ctrl+Shift+T` (Mac: `Cmd+Shift+T`) — toggle cleaning on/off
+  - `Ctrl+Shift+C` (Mac: `Cmd+Shift+C`) — open popup with cleaned-URL action
+- **`PRIVACY.md`** — comprehensive privacy policy (GDPR/CCPA compliant).
+- **`STORE_LISTING.md`** — Chrome Web Store + Firefox AMO submission guide
+  (icons, screenshots, listing text, privacy disclosure checklist).
+- **Demo SVG mockups** in `screenshots/`:
+  - `demo.svg` — banner showing extension in action
+  - `popup.svg` — popup UI mockup
+  - `options.svg` — options page mockup
+
+### Changed
+- `clean-url.js` accepts per-call `customRules` + `perDomainRules` (5th arg).
+  Internal save/restore of global DB state to prevent leakage between calls.
+- `content.js` reads `perDomainRules` from storage and passes to cleanUrl.
+- `popup.js` reads `perDomainRules` for current-tab preview.
+- `background.js` tracks `stats.daily[YYYY-MM-DD] = {urls, params}` (pruned
+  to last 30 days).
+- `options.js` adds Per-domain tab UI with auto-save (debounced 400ms).
+- `manifest.json` adds `toggle-cleaning` + `clean-current-tab` commands.
+
+### Tests
+- **82 unit tests** (`tests/test.js`) — up from 63:
+  - 19 new tests for per-domain rules (override, keep, wildcard, precedence)
+  - 5 new tests for `matchesHostPattern` (exact, wildcard, suffix, case)
+  - 5 new tests for i18n module
+- **20 integration tests** (`tests/test-content.js`) — unchanged
+
+### Total: 102 tests, 0 failures
+
+---
+
 ## [1.1.0] - 2026-06-22
 
 ### Added

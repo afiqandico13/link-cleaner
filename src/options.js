@@ -6,6 +6,8 @@
 (function () {
   "use strict";
   const LC = window.LinkCleaner;
+  const i18n = (window.LinkCleaner && window.LinkCleaner.i18n) || null;
+  const t = i18n ? i18n.t : (k) => k;
   if (!LC || !LC.cleanUrl) {
     document.body.textContent = "Link Cleaner core libraries missing.";
     return;
@@ -38,7 +40,7 @@
   function getAll() {
     return new Promise((resolve) =>
       chrome.storage.local.get(
-        ["enabled", "allowlist", "customStrip", "customKeep", "customPrefixes", "stats"],
+        ["enabled", "allowlist", "customStrip", "customKeep", "customPrefixes", "perDomainRules", "stats"],
         resolve
       )
     );
@@ -76,6 +78,76 @@
     $("#stat-urls").textContent = (stats?.totalUrlsCleaned || 0).toLocaleString();
     $("#stat-params").textContent = (stats?.totalParamsRemoved || 0).toLocaleString();
     $("#stat-cleanings").textContent = ((stats?.totalUrlsCleaned || 0)).toLocaleString();
+    renderChart(stats?.daily || {});
+  }
+
+  function renderChart(daily) {
+    const svg = $("#chart");
+    if (!svg) return;
+    // Build last 7 days (oldest → newest)
+    const days = [];
+    const today = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      const entry = daily[key] || { urls: 0, params: 0 };
+      days.push({ date: key, urls: entry.urls || 0, params: entry.params || 0 });
+    }
+
+    const max = Math.max(1, ...days.map((d) => d.urls), ...days.map((d) => d.params));
+    const W = 700, H = 200;
+    const padL = 30, padR = 16, padT = 12, padB = 30;
+    const innerW = W - padL - padR;
+    const innerH = H - padT - padB;
+    const barGroupW = innerW / 7;
+    const barW = barGroupW * 0.36;
+    const gap = barGroupW * 0.08;
+
+    const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const parts = [];
+
+    // Y-axis grid lines (5 levels)
+    for (let i = 0; i <= 4; i++) {
+      const y = padT + (innerH * i / 4);
+      const v = Math.round(max * (1 - i / 4));
+      parts.push(`<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="currentColor" stroke-opacity="0.08" stroke-width="1" />`);
+      parts.push(`<text x="${padL - 4}" y="${y + 3}" text-anchor="end" font-size="9" fill="currentColor" fill-opacity="0.5">${v}</text>`);
+    }
+
+    days.forEach((d, i) => {
+      const cx = padL + barGroupW * i + barGroupW / 2;
+      const urlH = (d.urls / max) * innerH;
+      const paramH = (d.params / max) * innerH;
+      const urlX = cx - barW - gap / 2;
+      const paramX = cx + gap / 2;
+      const colorUrl = "#6d28d9";
+      const colorParam = "#a78bfa";
+
+      // Bars (rounded top corners via rect)
+      if (d.urls > 0) {
+        parts.push(`<rect x="${urlX}" y="${padT + innerH - urlH}" width="${barW}" height="${urlH}" fill="${colorUrl}" rx="2" ry="2"><title>${d.date}: ${d.urls} URLs</title></rect>`);
+      }
+      if (d.params > 0) {
+        parts.push(`<rect x="${paramX}" y="${padT + innerH - paramH}" width="${barW}" height="${paramH}" fill="${colorParam}" rx="2" ry="2"><title>${d.date}: ${d.params} params</title></rect>`);
+      }
+
+      // Day label
+      const date = new Date(d.date);
+      const dayName = dayNames[date.getDay()];
+      parts.push(`<text x="${cx}" y="${H - padB + 14}" text-anchor="middle" font-size="10" fill="currentColor" fill-opacity="0.7">${dayName}</text>`);
+      parts.push(`<text x="${cx}" y="${H - padB + 25}" text-anchor="middle" font-size="9" fill="currentColor" fill-opacity="0.4">${date.getDate()}</text>`);
+    });
+
+    svg.innerHTML = parts.join("");
+
+    // Summary
+    const totalUrls = days.reduce((a, d) => a + d.urls, 0);
+    const totalParams = days.reduce((a, d) => a + d.params, 0);
+    const summary = $("#chart-summary");
+    if (summary) {
+      summary.textContent = `Last 7 days: ${totalUrls} URLs cleaned, ${totalParams} params removed`;
+    }
   }
 
   $("#enabled-toggle").addEventListener("change", async (e) => {
@@ -96,13 +168,14 @@
 
   $("#reset-all-btn").addEventListener("click", async (e) => {
     e.preventDefault();
-    if (!confirm("Reset ALL settings (toggle, allowlist, custom rules, stats)? This cannot be undone.")) return;
+    if (!confirm("Reset ALL settings (toggle, allowlist, custom rules, per-domain rules, stats)? This cannot be undone.")) return;
     await setAll({
       enabled: true,
       allowlist: [],
       customStrip: [],
       customKeep: [],
       customPrefixes: [],
+      perDomainRules: {},
       stats: { totalUrlsCleaned: 0, totalParamsRemoved: 0, lastResetAt: new Date().toISOString() },
     });
     location.reload();
@@ -262,6 +335,107 @@
     await setAll({ allowlist: next });
     $("#allowlist-input").value = "";
     renderAllowlist(next);
+  });
+
+  // ============================================================================
+  // Per-domain Rules
+  // ============================================================================
+  function renderPerDomain(rules) {
+    const list = $("#perdomain-list");
+    list.innerHTML = "";
+    const entries = Object.entries(rules || {});
+    if (entries.length === 0) {
+      list.style.display = "none";
+      return;
+    }
+    list.style.display = "flex";
+    entries.forEach(([pattern, ruleData]) => {
+      const item = document.createElement("div");
+      item.className = "perdomain-item";
+      item.innerHTML = `
+        <div class="perdomain-item-head">
+          <span class="perdomain-pattern">${escapeHtml(pattern)}</span>
+          <button class="remove" data-pattern="${escapeHtml(pattern)}" title="Remove rule">×</button>
+        </div>
+        <div class="perdomain-fields">
+          <div class="perdomain-field">
+            <label>Always strip (one per line)</label>
+            <textarea data-field="strip" data-pattern="${escapeHtml(pattern)}" rows="3">${escapeHtml((ruleData.strip || []).join("\n"))}</textarea>
+          </div>
+          <div class="perdomain-field">
+            <label>Never strip (one per line)</label>
+            <textarea data-field="keep" data-pattern="${escapeHtml(pattern)}" rows="3">${escapeHtml((ruleData.keep || []).join("\n"))}</textarea>
+          </div>
+          <div class="perdomain-field">
+            <label>Custom prefixes (one per line)</label>
+            <textarea data-field="prefixes" data-pattern="${escapeHtml(pattern)}" rows="3">${escapeHtml((ruleData.prefixes || []).join("\n"))}</textarea>
+          </div>
+        </div>
+      `;
+      list.appendChild(item);
+    });
+
+    // Remove handler
+    list.querySelectorAll("button.remove").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const cur = await getAll();
+        const next = { ...cur.perDomainRules };
+        delete next[btn.dataset.pattern];
+        await setAll({ perDomainRules: next });
+        renderPerDomain(next);
+      });
+    });
+
+    // Auto-save on textarea change (debounced)
+    list.querySelectorAll("textarea").forEach((ta) => {
+      let timer = null;
+      ta.addEventListener("input", () => {
+        clearTimeout(timer);
+        timer = setTimeout(async () => {
+          const cur = await getAll();
+          const pattern = ta.dataset.pattern;
+          const field = ta.dataset.field;
+          const values = parseTextarea(ta.value);
+          const next = {
+            ...cur.perDomainRules,
+            [pattern]: {
+              ...(cur.perDomainRules[pattern] || {}),
+              [field]: values,
+            },
+          };
+          await setAll({ perDomainRules: next });
+        }, 400);
+      });
+    });
+  }
+
+  $("#add-perdomain-btn").addEventListener("click", async () => {
+    const pattern = $("#perdomain-pattern").value.trim().toLowerCase();
+    const valid = validateDomain(pattern);
+    if (!valid) {
+      $("#perdomain-pattern").style.borderColor = "var(--danger)";
+      setTimeout(() => ($("#perdomain-pattern").style.borderColor = ""), 800);
+      return;
+    }
+    const cur = await getAll();
+    if (cur.perDomainRules && cur.perDomainRules[valid]) {
+      flashButton("#add-perdomain-btn", "✓ Exists");
+      return;
+    }
+    const next = {
+      ...(cur.perDomainRules || {}),
+      [valid]: { strip: [], keep: [], prefixes: [] },
+    };
+    await setAll({ perDomainRules: next });
+    $("#perdomain-pattern").value = "";
+    renderPerDomain(next);
+  });
+
+  $("#perdomain-pattern").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      $("#add-perdomain-btn").click();
+    }
   });
 
   // ============================================================================
@@ -425,6 +599,7 @@
     loadGeneral(data);
     loadCustomRules(data);
     renderAllowlist(data.allowlist || []);
+    renderPerDomain(data.perDomainRules || {});
     updatePreview();
   });
 })();

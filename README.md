@@ -6,8 +6,11 @@ before you navigate to them.** Zero data collection, works offline, free forever
 [![Manifest](https://img.shields.io/badge/manifest-V3-blue)]()
 [![Chrome](https://img.shields.io/badge/Chrome-supported-success)]()
 [![Firefox](https://img.shields.io/badge/Firefox-109%2B-success)]()
+[![Safari](https://img.shields.io/badge/Safari-15.4%2B-success)]()
 [![License](https://img.shields.io/badge/license-MIT-blue)]()
-[![Tests](https://img.shields.io/badge/tests-38%20passed-success)]()
+[![Tests](https://img.shields.io/badge/tests-102%20passed-success)]()
+
+![Link Cleaner demo](screenshots/demo.svg)
 
 ---
 
@@ -38,13 +41,19 @@ sees a direct visit; nothing leaves your browser.
   - Always strip — add your own tracking params to strip
   - Never strip — protect specific params from being stripped (override DB)
   - Custom prefixes — strip any param matching your prefix (e.g., `myapp_*`)
+- **Per-domain rule overrides** — domain-specific `strip`/`keep`/`prefixes`
+  that REPLACE global rules when the URL matches (e.g., "on YouTube, also
+  strip `feature`").
 - **Zero-config**: install, done. Works on every site automatically.
 - **Page action badge** — toolbar icon shows count of cleanable links on the
-  current page (`🛡️ 12`). Updates live as you scroll.
-- **Options page** (right-click icon → Options) with 6 tabs:
-  General / Custom Rules / Allowlist / Bulk Cleaner / Backup / About
+  current page (`🛡️ 12`). Updates live as you scroll. Shows `✓` (gray) when
+  the page is on an allowlisted domain.
+- **Options page** (right-click icon → Options) with 7 tabs:
+  General / Custom Rules / Allowlist / Per-domain / Bulk Cleaner / Backup / About
+- **Statistics dashboard with 7-day bar chart** in the General tab
 - **Bulk URL cleaner** — paste up to 1000 URLs, get cleaned versions, copy/download
 - **Export/import** settings to/from JSON — cross-device sync
+- **i18n** — English + Indonesian (auto-detect browser locale)
 - **Popup preview**: see exactly which params got stripped from the current URL.
 - **Copy / navigate**: copy the cleaned URL to clipboard, or one-click navigate
   to it.
@@ -192,12 +201,14 @@ npm install   # installs jsdom (one-time)
 npm test      # runs all 74 tests (unit + integration + perf)
 ```
 
-**54 unit tests** (`tests/test.js`) cover:
+**82 unit tests** (`tests/test.js`) cover:
 - Each major platform's params (Google, Facebook, Instagram, TikTok, …)
 - Prefix matching (`utm_*`, etc.)
 - Wildcard allowlist (`example.com`, `*.example.com`, `.example.com`)
 - Idempotence (cleaning twice = cleaning once)
-- Non-http(s) URLs (mailto:, tel:, javascript:)
+- Per-domain rule overrides (override global rules for specific hosts)
+- `matchesHostPattern` (exact, wildcard, suffix, case insensitive)
+- i18n module (EN + ID, format args)
 - Relative URL resolution
 - Edge cases (invalid URLs, empty strings, fragments)
 - Performance benchmark (100,000+ cleanings in ~1s)

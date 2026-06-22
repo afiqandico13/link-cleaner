@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif">
+  <defs>
+    <filter id="shadow"><feGaussianBlur in="SourceAlpha" stdDeviation="6"/><feOffset dx="0" dy="3"/><feComponentTransfer><feFuncA type="linear" slope="0.12"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="1200" height="750" fill="#ffffff"/>
+
+  <!-- Header -->
+  <g transform="translate(40, 30)">
+    <text x="0" y="0" font-size="22">🛡️</text>
+    <text x="30" y="2" font-size="18" font-weight="700" fill="#1a1a1f">Link Cleaner</text>
+    <rect x="155" y="-13" width="50" height="20" rx="10" fill="#f7f7f8" stroke="#e3e3e6"/>
+    <text x="180" y="1" text-anchor="middle" font-size="10" fill="#6b6b73">v1.2.0</text>
+    <text x="30" y="22" font-size="11" fill="#6b6b73">Full settings — popup gives quick toggle only</text>
+  </g>
+
+  <!-- Tabs -->
+  <g transform="translate(40, 90)" font-size="12">
+    <text x="0" y="14" font-weight="600" fill="#6d28d9" text-decoration="underline">General</text>
+    <text x="60" y="14" fill="#6b6b73">Custom Rules</text>
+    <text x="148" y="14" fill="#6b6b73">Allowlist</text>
+    <text x="220" y="14" fill="#6b6b73">Per-domain</text>
+    <text x="298" y="14" fill="#6b6b73">Bulk Cleaner</text>
+    <text x="385" y="14" fill="#6b6b73">Backup</text>
+    <text x="442" y="14" fill="#6b6b73">About</text>
+    <line x1="0" y1="22" x2="500" y2="22" stroke="#e3e3e6"/>
+  </g>
+
+  <!-- Cards -->
+  <g transform="translate(40, 140)">
+    <!-- Toggle -->
+    <g filter="url(#shadow)">
+      <rect width="1120" height="56" rx="10" fill="#f7f7f8" stroke="#e3e3e6"/>
+      <text x="20" y="22" font-size="13" font-weight="600">Enable cleaning</text>
+      <text x="20" y="40" font-size="11" fill="#6b6b73">Apply on every page automatically</text>
+      <rect x="1060" y="16" width="44" height="24" rx="12" fill="#6d28d9"/>
+      <circle cx="1092" cy="28" r="9" fill="white"/>
+    </g>
+
+    <!-- Stats grid -->
+    <g transform="translate(0, 70)" filter="url(#shadow)">
+      <rect width="1120" height="120" rx="10" fill="#f7f7f8" stroke="#e3e3e6"/>
+      <text x="20" y="22" font-size="11" font-weight="600" fill="#6b6b73" letter-spacing="1">ALL-TIME STATS</text>
+      <g transform="translate(20, 40)">
+        <rect width="340" height="64" rx="6" fill="#ffffff" stroke="#e3e3e6"/>
+        <text x="170" y="32" text-anchor="middle" font-size="28" font-weight="700" fill="#6d28d9">1,247</text>
+        <text x="170" y="50" text-anchor="middle" font-size="10" fill="#6b6b73">URLs cleaned</text>
+
+        <rect x="356" width="340" height="64" rx="6" fill="#ffffff" stroke="#e3e3e6"/>
+        <text x="526" y="32" text-anchor="middle" font-size="28" font-weight="700" fill="#6d28d9">3,891</text>
+        <text x="526" y="50" text-anchor="middle" font-size="10" fill="#6b6b73">Params removed</text>
+
+        <rect x="712" width="368" height="64" rx="6" fill="#ffffff" stroke="#e3e3e6"/>
+        <text x="896" y="32" text-anchor="middle" font-size="28" font-weight="700" fill="#6d28d9">87 days</text>
+        <text x="896" y="50" text-anchor="middle" font-size="10" fill="#6b6b73">Days active</text>
+      </g>
+    </g>
+
+    <!-- Chart -->
+    <g transform="translate(0, 210)" filter="url(#shadow)">
+      <rect width="1120" height="220" rx="10" fill="#f7f7f8" stroke="#e3e3e6"/>
+      <text x="20" y="22" font-size="11" font-weight="600" fill="#6b6b73" letter-spacing="1">LAST 7 DAYS</text>
+
+      <!-- grid -->
+      <g transform="translate(40, 40)" stroke="#d0d0d4" stroke-dasharray="2,2">
+        <line x1="0" y1="0" x2="1040" y2="0"/>
+        <line x1="0" y1="40" x2="1040" y2="40"/>
+        <line x1="0" y1="80" x2="1040" y2="80"/>
+        <line x1="0" y1="120" x2="1040" y2="120"/>
+      </g>
+
+      <!-- bars -->
+      <g transform="translate(60, 40)">
+        <!-- Day 1 -->
+        <rect x="0" y="60" width="30" height="60" fill="#6d28d9" rx="2"/>
+        <rect x="32" y="80" width="30" height="40" fill="#a78bfa" rx="2"/>
+        <text x="46" y="142" text-anchor="middle" font-size="10" fill="#6b6b73">Mon</text>
+        <text x="46" y="155" text-anchor="middle" font-size="9" fill="#a8a8b0">15</text>
+
+        <!-- Day 2 -->
+        <rect x="140" y="20" width="30" height="100" fill="#6d28d9" rx="2"/>
+        <rect x="172" y="50" width="30" height="70" fill="#a78bfa" rx="2"/>
+        <text x="186" y="142" text-anchor="middle" font-size="10" fill="#6b6b73">Tue</text>
+        <text x="186" y="155" text-anchor="middle" font-size="9" fill="#a8a8b0">16</text>
+
+        <!-- Day 3 -->
+        <rect x="280" y="40" width="30" height="80" fill="#6d28d9" rx="2"/>
+        <rect x="312" y="60" width="30" height="60" fill="#a78bfa" rx="2"/>
+        <text x="326" y="142" text-anchor="middle" font-size="10" fill="#6b6b73">Wed</text>
+        <text x="326" y="155" text-anchor="middle" font-size="9" fill="#a8a8b0">17</text>
+
+        <!-- Day 4 -->
+        <rect x="420" y="10" width="30" height="110" fill="#6d28d9" rx="2"/>
+        <rect x="452" y="35" width="30" height="85" fill="#a78bfa" rx="2"/>
+        <text x="466" y="142" text-anchor="middle" font-size="10" fill="#6b6b73">Thu</text>
+        <text x="466" y="155" text-anchor="middle" font-size="9" fill="#a8a8b0">18</text>
+
+        <!-- Day 5 -->
+        <rect x="560" y="0" width="30" height="120" fill="#6d28d9" rx="2"/>
+        <rect x="592" y="20" width="30" height="100" fill="#a78bfa" rx="2"/>
+        <text x="606" y="142" text-anchor="middle" font-size="10" fill="#6b6b73">Fri</text>
+        <text x="606" y="155" text-anchor="middle" font-size="9" fill="#a8a8b0">19</text>
+
+        <!-- Day 6 -->
+        <rect x="700" y="30" width="30" height="90" fill="#6d28d9" rx="2"/>
+        <rect x="732" y="50" width="30" height="70" fill="#a78bfa" rx="2"/>
+        <text x="746" y="142" text-anchor="middle" font-size="10" fill="#6b6b73">Sat</text>
+        <text x="746" y="155" text-anchor="middle" font-size="9" fill="#a8a8b0">20</text>
+
+        <!-- Day 7 -->
+        <rect x="840" y="50" width="30" height="70" fill="#6d28d9" rx="2"/>
+        <rect x="872" y="70" width="30" height="50" fill="#a78bfa" rx="2"/>
+        <text x="886" y="142" text-anchor="middle" font-size="10" fill="#6b6b73">Sun</text>
+        <text x="886" y="155" text-anchor="middle" font-size="9" fill="#a8a8b0">21</text>
+      </g>
+
+      <!-- Legend -->
+      <g transform="translate(20, 190)" font-size="11" fill="#6b6b73">
+        <rect x="0" y="-8" width="10" height="10" fill="#6d28d9" rx="2"/>
+        <text x="14" y="0">URLs cleaned</text>
+        <rect x="100" y="-8" width="10" height="10" fill="#a78bfa" rx="2"/>
+        <text x="114" y="0">Params removed</text>
+      </g>
+    </g>
+  </g>
+</svg>

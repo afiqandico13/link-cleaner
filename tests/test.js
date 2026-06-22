@@ -26,6 +26,10 @@ vm.runInContext(
   fs.readFileSync(path.join(baseDir, "src", "clean-url.js"), "utf-8"),
   sandbox
 );
+vm.runInContext(
+  fs.readFileSync(path.join(baseDir, "src", "i18n.js"), "utf-8"),
+  sandbox
+);
 
 const LC = sandbox.LinkCleaner;
 if (!LC || !LC.cleanUrl) {
@@ -49,8 +53,8 @@ function assert(name, cond, detail) {
   }
 }
 
-function clean(url, allowlist = [], base) {
-  return LC.cleanUrl(url, allowlist, base);
+function clean(url, allowlist = [], base, customRules, perDomainRules) {
+  return LC.cleanUrl(url, allowlist, base, customRules, perDomainRules);
 }
 
 // ============================================================================
@@ -271,10 +275,92 @@ console.log("\n=== Custom rules: precedence ===");
   // But customKeep protects it
   const r = clean("https://example.com/?utm_source=fb&id=1");
   assert("customKeep overrides DB: utm_source preserved", r.cleaned.includes("utm_source"));
-  // other utm_* still stripped (they don't match the keep)
-  assert("other utm_* still stripped", r.removed.includes("utm_medium") || true);
-  // wait, utm_medium isn't in URL. just verify id preserved
   assert("id=1 preserved", r.cleaned.includes("id=1"));
+}
+
+// ============================================================================
+// PER-DOMAIN RULES (v1.2.0)
+// ============================================================================
+console.log("\n=== Per-domain rules: override global ===");
+{
+  // Reset global
+  LC.setCustomRules({ strip: [], keep: [], prefixes: [] });
+  const perDomain = {
+    "*.youtube.com": { strip: ["feature"], keep: [], prefixes: [] },
+  };
+  // YouTube URL: feature gets stripped (per-domain)
+  const r1 = clean("https://www.youtube.com/watch?v=abc&feature=share", null, null, null, perDomain);
+  assert("youtube.com: feature stripped by per-domain rule", !r1.cleaned.includes("feature"));
+  // Non-YouTube URL: feature preserved (no per-domain rule applies)
+  const r2 = clean("https://example.com/?feature=share&id=1", null, null, null, perDomain);
+  assert("non-youtube.com: feature preserved", r2.cleaned.includes("feature"));
+}
+
+console.log("\n=== Per-domain rules: keep overrides DB ===");
+{
+  LC.setCustomRules({ strip: [], keep: [], prefixes: [] });
+  const perDomain = {
+    "*.google.com": { strip: [], keep: ["q"], prefixes: [] },
+  };
+  const r = clean("https://www.google.com/search?q=hello&utm_source=news", null, null, null, perDomain);
+  assert("google.com: q kept (per-domain rule)", r.cleaned.includes("q=hello"));
+  assert("google.com: utm_source still stripped (DB)", !r.cleaned.includes("utm_source"));
+}
+
+console.log("\n=== Per-domain rules: wildcard match ===");
+{
+  LC.setCustomRules({ strip: [], keep: [], prefixes: [] });
+  const perDomain = {
+    "*.mycompany.com": { strip: ["internal_id"], keep: [], prefixes: [] },
+  };
+  const r1 = clean("https://app.mycompany.com/page?internal_id=123&id=1", null, null, null, perDomain);
+  assert("*.mycompany.com matches subdomain", !r1.cleaned.includes("internal_id"));
+  const r2 = clean("https://mycompany.com/?internal_id=123", null, null, null, perDomain);
+  assert("*.mycompany.com does NOT match apex", r2.cleaned.includes("internal_id"));
+}
+
+console.log("\n=== Per-domain rules: precedence over global customRules ===");
+{
+  // Global keeps "ref"
+  const globalRules = { strip: [], keep: ["ref"], prefixes: [] };
+  // Per-domain overrides: on youtube.com, strip "ref"
+  const perDomain = {
+    "*.youtube.com": { strip: ["ref"], keep: [], prefixes: [] },
+  };
+  const r = clean("https://www.youtube.com/?ref=abc&id=1", null, null, globalRules, perDomain);
+  assert("per-domain wins over global: ref stripped on youtube", !r.cleaned.includes("ref"));
+  // On other domain, global keep applies
+  const r2 = clean("https://example.com/?ref=abc&id=1", null, null, globalRules, perDomain);
+  assert("global keep applies elsewhere: ref preserved", r2.cleaned.includes("ref"));
+}
+
+console.log("\n=== matchesHostPattern ===");
+{
+  assert("exact match", LC.matchesHostPattern("example.com", "example.com"));
+  assert("wildcard: matches subdomain", LC.matchesHostPattern("a.example.com", "*.example.com"));
+  assert("wildcard: matches deep subdomain", LC.matchesHostPattern("a.b.example.com", "*.example.com"));
+  assert("wildcard: does NOT match apex", !LC.matchesHostPattern("example.com", "*.example.com"));
+  assert("suffix: matches apex", LC.matchesHostPattern("example.com", ".example.com"));
+  assert("suffix: matches subdomain", LC.matchesHostPattern("a.example.com", ".example.com"));
+  assert("case insensitive", LC.matchesHostPattern("EXAMPLE.COM", "example.com"));
+}
+
+// ============================================================================
+// I18N (v1.2.0)
+// ============================================================================
+console.log("\n=== i18n: basic translation ===");
+{
+  // Force EN
+  if (LC.i18n) {
+    const t = LC.i18n.t;
+    assert("i18n module loaded", typeof t === "function");
+    assert("i18n has EN strings", typeof LC.i18n.STRINGS.en === "object");
+    assert("i18n has ID strings", typeof LC.i18n.STRINGS.id === "object");
+    assert("t() returns string", typeof t("popup.title") === "string");
+    assert("t() supports args", t("popup.watching", "88").includes("88"));
+  } else {
+    assert("i18n module loaded", false, "LC.i18n missing — load src/i18n.js");
+  }
 }
 
 // ============================================================================

@@ -18,10 +18,16 @@
   // ---------------------------------------------------------------------------
   function getSettings() {
     return new Promise((resolve) => {
-      chrome.storage.local.get(["enabled", "allowlist"], (data) => {
+      chrome.storage.local.get(["enabled", "allowlist", "customStrip", "customKeep", "customPrefixes", "perDomainRules"], (data) => {
         resolve({
           enabled: data.enabled !== false,
           allowlist: Array.isArray(data.allowlist) ? data.allowlist : [],
+          customRules: {
+            strip: Array.isArray(data.customStrip) ? data.customStrip : [],
+            keep: Array.isArray(data.customKeep) ? data.customKeep : [],
+            prefixes: Array.isArray(data.customPrefixes) ? data.customPrefixes : [],
+          },
+          perDomainRules: (data.perDomainRules && typeof data.perDomainRules === "object") ? data.perDomainRules : {},
         });
       });
     });
@@ -53,7 +59,7 @@
       const url = tab?.url || "(no URL)";
       $("#original-url").textContent = url;
 
-      const result = LC.cleanUrl(url, settings.allowlist);
+      const result = LC.cleanUrl(url, settings.allowlist, null, settings.customRules, settings.perDomainRules);
       const cleanedEl = $("#cleaned-url");
       const removedEl = $("#removed-params");
 

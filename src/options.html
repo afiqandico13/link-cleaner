@@ -11,13 +11,14 @@
     <div class="brand">
       <span class="logo">🛡️</span>
       <h1>Link Cleaner</h1>
-      <span class="version" id="version">v1.1.0</span>
+      <span class="version" id="version">v1.2.0</span>
     </div>
     <p class="subtitle">Full settings — popup gives quick toggle only</p>
     <nav class="tabs">
       <a href="#general" class="tab active" data-tab="general">General</a>
       <a href="#rules" class="tab" data-tab="rules">Custom Rules</a>
       <a href="#allowlist" class="tab" data-tab="allowlist">Allowlist</a>
+      <a href="#perdomain" class="tab" data-tab="perdomain">Per-domain</a>
       <a href="#bulk" class="tab" data-tab="bulk">Bulk Cleaner</a>
       <a href="#backup" class="tab" data-tab="backup">Backup</a>
       <a href="#about" class="tab" data-tab="about">About</a>
@@ -68,6 +69,18 @@
           </div>
         </div>
         <button id="reset-stats-btn" class="text-btn">Reset stats</button>
+      </div>
+
+      <div class="card">
+        <h3>Last 7 days</h3>
+        <div class="chart-wrap">
+          <svg id="chart" class="chart" viewBox="0 0 700 200" preserveAspectRatio="xMidYMid meet"></svg>
+        </div>
+        <div class="chart-legend">
+          <span><span class="dot dot-url"></span>URLs cleaned</span>
+          <span><span class="dot dot-param"></span>Params removed</span>
+        </div>
+        <div class="chart-summary" id="chart-summary"></div>
       </div>
     </section>
 
@@ -138,6 +151,35 @@
         </form>
         <ul id="allowlist-list" class="allowlist-list"></ul>
       </div>
+    </section>
+
+    <!-- ============================== PER-DOMAIN RULES ============================== -->
+    <section id="perdomain" class="panel">
+      <h2>Per-domain Rules</h2>
+
+      <div class="card">
+        <p class="row-sub">
+          Override global rules for specific domains. Per-domain rules
+          <strong>replace</strong> global custom rules when the URL matches.
+          Use wildcards (<code>*.example.com</code>) to apply to subdomains.
+        </p>
+
+        <div class="add-per-domain">
+          <input type="text" id="perdomain-pattern" placeholder="example.com or *.example.com" />
+          <button id="add-perdomain-btn" class="btn primary">+ Add</button>
+        </div>
+      </div>
+
+      <div id="perdomain-list" class="perdomain-list"></div>
+
+      <p class="row-sub" style="margin-top:16px">
+        <strong>Example use cases:</strong>
+      </p>
+      <ul class="help-list">
+        <li>On <code>youtube.com</code>, <strong>keep</strong> <code>feature</code> (don't strip it — it controls player UI)</li>
+        <li>On <code>google.com</code>, <strong>keep</strong> <code>q</code> (preserve search queries)</li>
+        <li>On <code>*.mycompany.com</code>, <strong>strip</strong> internal tracker params</li>
+      </ul>
     </section>
 
     <!-- ============================== BULK CLEANER ============================== -->
@@ -232,6 +274,7 @@
 
   <script src="rules/tracking-params.js"></script>
   <script src="src/clean-url.js"></script>
+  <script src="src/i18n.js"></script>
   <script src="src/options.js"></script>
 </body>
 </html>

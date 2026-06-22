@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Link Cleaner",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Strips tracking parameters from URLs (utm, fbclid, gclid, igshid, etc.) before navigation. Privacy-first, zero data collection, works offline.",
   "author": "Afiq Andico Pangimpian",
   "homepage_url": "https://github.com/afiqandico13/link-cleaner",
@@ -60,6 +60,20 @@
         "mac": "Command+Shift+L"
       },
       "description": "Open Link Cleaner popup"
+    },
+    "toggle-cleaning": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+T",
+        "mac": "Command+Shift+T"
+      },
+      "description": "Toggle cleaning on/off (quick)"
+    },
+    "clean-current-tab": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+C",
+        "mac": "Command+Shift+C"
+      },
+      "description": "Navigate current tab to cleaned URL"
     }
   },
   "browser_specific_settings": {
