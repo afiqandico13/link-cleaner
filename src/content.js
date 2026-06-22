@@ -31,6 +31,21 @@
   }
   loadSettings();
 
+  // Track cleanable count for page action badge
+  let cleanableCount = 0;
+
+  function reportBadge() {
+    try {
+      chrome.runtime.sendMessage(
+        { type: "cleanable-count", count: cleanableCount },
+        () => void chrome.runtime.lastError
+      );
+    } catch (_) { /* ignore */ }
+  }
+
+  // Reset counter on full page rewrites
+  function resetCounter() { cleanableCount = 0; }
+
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== "local") return;
     if ("enabled" in changes) {
@@ -77,6 +92,10 @@
     anchor.dataset.linkCleaned = "1";
     anchor.setAttribute("href", result.cleaned);
 
+    // Bump cleanable count and update badge (throttled)
+    cleanableCount += 1;
+    if (cleanableCount % 5 === 0 || cleanableCount === 1) reportBadge();
+
     if (!anchor.dataset.linkCleanedBy) {
       anchor.dataset.linkCleanedBy = "LinkCleaner";
       anchor.setAttribute(
@@ -89,8 +108,10 @@
 
   function rewriteAllAnchors(force) {
     if (!settings.enabled) return;
+    resetCounter();
     const anchors = document.querySelectorAll("a[href]");
     anchors.forEach((a) => rewriteAnchor(a, force));
+    reportBadge();
   }
 
   // ---------------------------------------------------------------------------
@@ -130,16 +151,21 @@
 
   // ---------------------------------------------------------------------------
   // Intercept programmatic navigation: location.assign / location.replace
+  // (Some test environments make these read-only — degrade gracefully.)
   // ---------------------------------------------------------------------------
   ["assign", "replace"].forEach((method) => {
-    const original = window.location[method].bind(window.location);
-    window.location[method] = function (url) {
-      if (url && settings.enabled) {
-        const result = LC.cleanUrl(url, settings.allowlist);
-        if (result && result.changed) url = result.cleaned;
-      }
-      return original(url);
-    };
+    try {
+      const original = window.location[method].bind(window.location);
+      window.location[method] = function (url) {
+        if (url && settings.enabled) {
+          const result = LC.cleanUrl(url, settings.allowlist);
+          if (result && result.changed) url = result.cleaned;
+        }
+        return original(url);
+      };
+    } catch (e) {
+      console.info(`[LinkCleaner] Could not wrap location.${method} (read-only in this env)`);
+    }
   });
 
   function navigate(originalUrl, cleanedUrl) {

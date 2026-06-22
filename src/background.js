@@ -43,6 +43,18 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       chrome.storage.local.set({ stats });
     });
   }
+
+  if (msg.type === "cleanable-count") {
+    // Update page action badge with cleanable links count for current tab
+    const tabId = sender.tab?.id;
+    if (tabId != null && msg.count > 0) {
+      const text = msg.count > 99 ? "99+" : String(msg.count);
+      chrome.action.setBadgeText({ tabId, text });
+      chrome.action.setBadgeBackgroundColor({ tabId, color: "#6d28d9" });
+    } else if (tabId != null) {
+      chrome.action.setBadgeText({ tabId, text: "" });
+    }
+  }
 });
 
 // ---- Keyboard command: clean current tab URL ----

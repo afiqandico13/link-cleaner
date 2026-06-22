@@ -1,0 +1,21 @@
+{
+  "name": "link-cleaner",
+  "version": "1.0.0",
+  "description": "Privacy-first browser extension that strips tracking parameters from URLs before navigation. Manifest V3, 88 tracked params, 0 data collection.",
+  "author": "Afiq Andico Pangimpian",
+  "license": "MIT",
+  "homepage": "https://github.com/afiqandico13/link-cleaner",
+  "bugs": "https://github.com/afiqandico13/link-cleaner/issues",
+  "scripts": {
+    "test": "node tests/test.js && node tests/test-content.js",
+    "test:unit": "node tests/test.js",
+    "test:integration": "node tests/test-content.js",
+    "test:perf": "node tests/test.js"
+  },
+  "devDependencies": {
+    "jsdom": "^27.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

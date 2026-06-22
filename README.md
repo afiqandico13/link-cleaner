@@ -27,17 +27,25 @@ sees a direct visit; nothing leaves your browser.
 - **88 tracking parameters** in the database — covers Google, Facebook, Instagram,
   Twitter/X, TikTok, LinkedIn, Microsoft, Mailchimp, HubSpot, Marketo, Pinterest,
   Klaviyo, Matomo, Outbrain, Bing, Yandex, Quora, Reddit, Snap, and generic
-  patterns (`utm_*`, `_hs*`, `fb_*`).
+  patterns (`utm_*`, `_hs*`, `fb_*`, `__hs*`).
+- **Prefix matching**: any param starting with `utm_`, `fb_`, `_hs`, `__hs` is also
+  stripped (catches future variants without code changes).
+- **Wildcard allowlist** — disable cleaning for specific domains:
+  - `example.com` → exact match
+  - `*.example.com` → any subdomain (not the apex)
+  - `.example.com` → apex + all subdomains
 - **Zero-config**: install, done. Works on every site automatically.
-- **Smart allowlist**: disable cleaning for specific domains (e.g., your own
-  analytics dashboard).
+- **Page action badge** — toolbar icon shows count of cleanable links on the
+  current page (`🛡️ 12`). Updates live as you scroll.
 - **Popup preview**: see exactly which params got stripped from the current URL.
 - **Copy / navigate**: copy the cleaned URL to clipboard, or one-click navigate
   to it.
 - **Stats**: count of URLs cleaned + params removed (all-time).
 - **Cross-browser**: Chrome / Edge / Brave (Chromium) and Firefox 109+.
-- **Manifest V3**: future-proof, no `web_accessible_resources` shenanigans.
+- **Manifest V3**: future-proof, proper MV3 service worker.
 - **No data collection**: see [Privacy](#privacy) below.
+- **Dark-mode aware UI**: respects `prefers-color-scheme`.
+- **Keyboard shortcut**: `Ctrl+Shift+L` (`Cmd+Shift+L` on Mac).
 
 ---
 
@@ -59,6 +67,17 @@ sees a direct visit; nothing leaves your browser.
 > Temporary add-ons in Firefox are removed on browser restart. For permanent
 > install, package the extension (see Mozilla's docs) or use the Firefox
 > Add-ons store.
+
+### For development
+
+```bash
+git clone https://github.com/afiqandico13/link-cleaner.git
+cd link-cleaner
+npm install         # installs jsdom for tests
+npm test            # runs all 74 tests (unit + integration + perf)
+```
+
+Load as unpacked (steps above). Reload after every code change.
 
 ---
 
@@ -161,17 +180,28 @@ Reload the extension in `chrome://extensions`. Done.
 ## Testing
 
 ```bash
-node tests/test.js
+npm install   # installs jsdom (one-time)
+npm test      # runs all 74 tests (unit + integration + perf)
 ```
 
-38 unit tests cover:
+**54 unit tests** (`tests/test.js`) cover:
 - Each major platform's params (Google, Facebook, Instagram, TikTok, …)
 - Prefix matching (`utm_*`, etc.)
+- Wildcard allowlist (`example.com`, `*.example.com`, `.example.com`)
 - Idempotence (cleaning twice = cleaning once)
-- Allowlist behavior
 - Non-http(s) URLs (mailto:, tel:, javascript:)
 - Relative URL resolution
 - Edge cases (invalid URLs, empty strings, fragments)
+- Performance benchmark (100,000+ cleanings in ~1s)
+
+**20 integration tests** (`tests/test-content.js`) using JSDOM cover:
+- Anchor href rewriting at boot
+- MutationObserver picks up dynamically-added links
+- Click interception (race-condition guard)
+- `window.open` / `location.assign` interception
+- Disabled mode (settings toggle off)
+- Allowlist behavior
+- SPA stress test (100 rapid-fire link additions)
 
 ---
 

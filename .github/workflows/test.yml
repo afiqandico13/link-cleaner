@@ -1,0 +1,46 @@
+name: Tests
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18, 20, 22]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm run test:unit
+
+      - name: Run integration tests (JSDOM)
+        run: npm run test:integration
+
+      - name: Run all tests (combined)
+        run: npm test
+
+      - name: Validate manifest.json
+        run: node -e "const m = require('./manifest.json'); if (m.manifest_version !== 3) process.exit(1); console.log('manifest.json valid (MV' + m.manifest_version + ')')"
+
+      - name: Check JS syntax (production files)
+        run: |
+          for f in rules/*.js src/*.js; do
+            node --check "$f" && echo "  ✓ $f"
+          done
+
+      - name: Verify performance benchmark
+        run: npm test 2>&1 | grep -E "ops/sec|μs/op" | head -5

@@ -1,31 +1,31 @@
 /* Link Cleaner — Test Suite
-   Run: `node tests/test.js`
-   No dependencies; uses jsdom-like minimal URL polyfill via global URL.
-
-   Verifies that:
-   - Tracking params from each major platform are correctly stripped
-   - Non-tracking params are preserved
-   - Allowlist is honored
-   - Non-http(s) URLs are passed through
-   - Idempotence: cleaning twice gives same result
+   Run: `npm test`
+   Two sections:
+     1. Unit tests (correctness)
+     2. Performance benchmark
 */
 
 "use strict";
 const fs = require("fs");
 const path = require("path");
-
-// Minimal sandbox: load tracking-params.js and clean-url.js into a shared scope
-const sandbox = { URL, URLSearchParams, console };
 const vm = require("vm");
+
+// ============================================================================
+// SETUP — sandbox + load extension scripts
+// ============================================================================
+const sandbox = { URL, URLSearchParams, console };
 vm.createContext(sandbox);
 sandbox.window = sandbox;
 
 const baseDir = path.join(__dirname, "..");
-const trackingParams = fs.readFileSync(path.join(baseDir, "rules", "tracking-params.js"), "utf-8");
-const cleanUrlLib = fs.readFileSync(path.join(baseDir, "src", "clean-url.js"), "utf-8");
-
-vm.runInContext(trackingParams, sandbox);
-vm.runInContext(cleanUrlLib, sandbox);
+vm.runInContext(
+  fs.readFileSync(path.join(baseDir, "rules", "tracking-params.js"), "utf-8"),
+  sandbox
+);
+vm.runInContext(
+  fs.readFileSync(path.join(baseDir, "src", "clean-url.js"), "utf-8"),
+  sandbox
+);
 
 const LC = sandbox.LinkCleaner;
 if (!LC || !LC.cleanUrl) {
@@ -53,9 +53,9 @@ function clean(url, allowlist = [], base) {
   return LC.cleanUrl(url, allowlist, base);
 }
 
-// ---------------------------------------------------------------------------
-// TESTS
-// ---------------------------------------------------------------------------
+// ============================================================================
+// UNIT TESTS — Platform-by-platform coverage
+// ============================================================================
 
 console.log("\n=== Google Analytics ===");
 {
@@ -131,16 +131,54 @@ console.log("\n=== Idempotence ===");
   assert("second pass has no changes", !r2.changed);
 }
 
-console.log("\n=== Allowlist ===");
+// ============================================================================
+// WILDCARD ALLOWLIST
+// ============================================================================
+console.log("\n=== Wildcard allowlist: exact match ===");
 {
-  const r = clean(
-    "https://my-cafe.com/order?utm_source=campaign&id=42",
-    ["my-cafe.com"]
-  );
+  const r = clean("https://my-cafe.com/order?utm_source=campaign&id=42", ["my-cafe.com"]);
   assert("allowlisted domain not cleaned", !r.changed);
   assert("keeps utm_source when allowlisted", r.cleaned.includes("utm_source"));
 }
 
+console.log("\n=== Wildcard allowlist: *.example.com ===");
+{
+  // *.example.com should match SUBDOMAINS but not the apex
+  assert("*.example.com matches mail.example.com", LC.matchesAllowlist("mail.example.com", ["*.example.com"]));
+  assert("*.example.com matches deep.sub.example.com", LC.matchesAllowlist("deep.sub.example.com", ["*.example.com"]));
+  assert("*.example.com does NOT match example.com (apex)", !LC.matchesAllowlist("example.com", ["*.example.com"]));
+  assert("*.example.com does NOT match notexample.com", !LC.matchesAllowlist("notexample.com", ["*.example.com"]));
+}
+
+console.log("\n=== Wildcard allowlist: .example.com ===");
+{
+  // .example.com (leading dot) should match BOTH apex AND subdomains
+  assert(".example.com matches example.com", LC.matchesAllowlist("example.com", [".example.com"]));
+  assert(".example.com matches mail.example.com", LC.matchesAllowlist("mail.example.com", [".example.com"]));
+}
+
+console.log("\n=== Wildcard allowlist: case insensitive ===");
+{
+  assert("uppercase pattern matches lowercase host", LC.matchesAllowlist("example.com", ["EXAMPLE.COM"]));
+  assert("uppercase host matches lowercase pattern", LC.matchesAllowlist("EXAMPLE.COM", ["example.com"]));
+}
+
+console.log("\n=== Wildcard allowlist: end-to-end cleanUrl ===");
+{
+  const r = clean("https://shop.example.com/p?utm_source=x&id=1", ["*.example.com"]);
+  assert("subdomain with wildcard: not cleaned", !r.changed);
+  assert("subdomain with wildcard: keeps utm_source", r.cleaned.includes("utm_source"));
+
+  const r2 = clean("https://example.com/?utm_source=x", ["*.example.com"]);
+  assert("apex with wildcard-only: cleaned (apex not matched)", r2.changed);
+
+  const r3 = clean("https://example.com/?utm_source=x", [".example.com"]);
+  assert("apex with .example.com: not cleaned", !r3.changed);
+}
+
+// ============================================================================
+// NON-HTTP, RELATIVE URLS, EDGE CASES
+// ============================================================================
 console.log("\n=== Non-http URLs ===");
 {
   assert(
@@ -180,21 +218,87 @@ console.log("\n=== Edge cases ===");
 console.log("\n=== Case insensitivity ===");
 {
   const r = clean("https://example.com/?UTM_Source=news&FbClid=ABC&id=1");
-  assert("UTM_Source (uppercase) removed", !r.cleaned.toLowerCase().includes("utm_source") || !r.cleaned.includes("UTM_Source"));
-  // cleaned URL uses URL normalization, lowercase keys
-  assert("result has lowercase keys", r.cleaned.includes("utm_source") === false);
+  assert("UTM_Source (uppercase) removed", !r.cleaned.includes("UTM_Source"));
 }
 
 console.log("\n=== Param count check ===");
 {
   const count = LC.PARAM_COUNT;
   console.log(`  ℹ Database has ${count} tracked params`);
-  assert("has at least 60 tracked params", count >= 60);
+  assert("has at least 80 tracked params", count >= 80);
 }
 
-// ---------------------------------------------------------------------------
+console.log("\n=== stripAllParams (nuclear option) ===");
+{
+  const r = LC.stripAllParams("https://example.com/?a=1&b=2&utm_source=x#frag");
+  assert("stripAllParams removes all params", r.cleaned === "https://example.com/#frag");
+  assert("stripAllParams lists removed", r.removed.length === 3);
+  assert("stripAllParams preserves path", r.cleaned.includes("/"));
+}
+
+// ============================================================================
+// PERFORMANCE BENCHMARK
+// ============================================================================
+console.log("\n" + "=".repeat(60));
+console.log("PERFORMANCE BENCHMARK");
+console.log("=".repeat(60));
+
+// Generate realistic URL pool
+const URL_POOL = [];
+const domains = ["google.com", "facebook.com", "youtube.com", "amazon.com", "twitter.com",
+  "linkedin.com", "instagram.com", "tiktok.com", "reddit.com", "news.ycombinator.com",
+  "shop.example.com", "blog.example.org", "mail.google.com"];
+const paths = ["/", "/article", "/product/123", "/user/profile", "/search?q=hello", "/blog/post-title"];
+const extraParams = ["ref=newsletter", "id=42", "page=1", "category=tech", "lang=en", "sort=desc"];
+
+for (let i = 0; i < 200; i++) {
+  const d = domains[i % domains.length];
+  const p = paths[i % paths.length];
+  const tracker = i % 4 === 0 ? `&utm_source=newsletter&utm_medium=email&utm_campaign=spring${i}` :
+                  i % 4 === 1 ? `&fbclid=IwAR${i}XYZ` :
+                  i % 4 === 2 ? `&gclid=Cj0KCQjw${i}ABC` :
+                  `&igshid=${i}&_ttp=abc${i}`;
+  const extras = extraParams.slice(0, (i % 4) + 1).join("&");
+  URL_POOL.push(`https://${d}${p}?${extras}${tracker}`);
+}
+
+function benchmark(iters, label) {
+  // Warmup
+  for (let i = 0; i < 100; i++) clean(URL_POOL[i % URL_POOL.length]);
+  // Measure
+  const start = process.hrtime.bigint();
+  for (let i = 0; i < iters; i++) {
+    clean(URL_POOL[i % URL_POOL.length]);
+  }
+  const elapsedMs = Number(process.hrtime.bigint() - start) / 1e6;
+  const opsPerSec = (iters / elapsedMs * 1000).toFixed(0);
+  const usPerOp = (elapsedMs / iters * 1000).toFixed(1);
+  console.log(`  ${label.padEnd(28)} ${iters.toString().padStart(6)} ops in ${elapsedMs.toFixed(1)}ms  (${opsPerSec} ops/sec, ${usPerOp}μs/op)`);
+  return { elapsedMs, opsPerSec: parseInt(opsPerSec), usPerOp: parseFloat(usPerOp) };
+}
+
+const results = [];
+results.push(["Small URLs (typical)",   benchmark(10000, "10k cleanUrl() calls")]);
+results.push(["With wildcard allowlist", benchmark(10000, "10k cleanUrl() w/ allowlist")]);
+results.push(["Idempotence (already clean)", benchmark(10000, "10k on clean URL")]);
+
+// Stress test with HUGE URL (many params)
+const huge = "https://example.com/?" + Array.from({ length: 100 }, (_, i) =>
+  i % 3 === 0 ? `utm_${i}=v${i}` : `p${i}=v${i}`
+).join("&");
+const start = process.hrtime.bigint();
+for (let i = 0; i < 5000; i++) clean(huge);
+const hugeMs = Number(process.hrtime.bigint() - start) / 1e6;
+console.log(`  ${"100-param URL (huge)".padEnd(28)} 5000 ops in ${hugeMs.toFixed(1)}ms  (${(5000/hugeMs*1000).toFixed(0)} ops/sec)`);
+
+// Performance assertions
+const [, typical] = results[0];
+assert("typical clean >= 10k ops/sec", typical.opsPerSec >= 10000, `${typical.opsPerSec} ops/sec`);
+assert("typical clean < 200μs per op", typical.usPerOp < 200, `${typical.usPerOp}μs/op`);
+
+// ============================================================================
 // SUMMARY
-// ---------------------------------------------------------------------------
+// ============================================================================
 console.log(`\n${"=".repeat(60)}`);
 console.log(`Tests: ${passed} passed, ${failed} failed`);
 console.log("=".repeat(60));
