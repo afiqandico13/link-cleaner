@@ -1,10 +1,23 @@
-/* Link Cleaner — Tracking Parameter Database
-   Comprehensive list of known tracking parameters + prefix patterns.
-   Sets window.LinkCleaner with PARAMS (Set), PREFIXES (array), shouldStrip(key).
+/* Link Cleaner — Tracking Parameter Database + Custom Rule Engine
+   - 88 built-in tracked params + 4 prefix patterns
+   - Per-rule overrides: customStrip (always strip), customKeep (never strip),
+     customPrefixes (user-defined prefix patterns)
+   - Exports globals on window.LinkCleaner
+
+   shouldStrip(key) precedence (highest → lowest):
+     1. customKeep → return false (explicit user override)
+     2. built-in prefixes (utm_, fb_, _hs, __hs) → true
+     3. customPrefixes → true
+     4. customStrip → true
+     5. built-in PARAMS → true
+     6. otherwise → false
 */
 (function () {
   "use strict";
 
+  // ============================================================================
+  // BUILT-IN DATABASE — synced with rules/tracking-params.js
+  // ============================================================================
   const PARAMS = new Set([
     // Google Analytics / Ads / Tag Manager
     "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content",
@@ -64,19 +77,54 @@
     "__hs",
   ];
 
+  // ============================================================================
+  // CUSTOM RULE STATE — mutable, set via setCustomRules() from popup/options
+  // ============================================================================
+  const customStrip = new Set();
+  const customKeep = new Set();
+  const customPrefixes = new Set();
+
+  /**
+   * Update the per-rule overrides. Pass arrays of strings (case-insensitive).
+   * @param {{strip?: string[], keep?: string[], prefixes?: string[]}} rules
+   */
+  function setCustomRules(rules) {
+    if (rules && Array.isArray(rules.strip)) {
+      customStrip.clear();
+      rules.strip.forEach((k) => customStrip.add(String(k).toLowerCase()));
+    }
+    if (rules && Array.isArray(rules.keep)) {
+      customKeep.clear();
+      rules.keep.forEach((k) => customKeep.add(String(k).toLowerCase()));
+    }
+    if (rules && Array.isArray(rules.prefixes)) {
+      customPrefixes.clear();
+      rules.prefixes.forEach((p) => customPrefixes.add(String(p).toLowerCase()));
+    }
+  }
+
   function shouldStrip(key) {
     if (!key) return false;
     const lower = String(key).toLowerCase();
-    if (PARAMS.has(lower)) return true;
+    if (customKeep.has(lower)) return false;
     for (const p of PREFIXES) {
       if (lower.startsWith(p)) return true;
     }
+    for (const p of customPrefixes) {
+      if (lower.startsWith(p)) return true;
+    }
+    if (customStrip.has(lower)) return true;
+    if (PARAMS.has(lower)) return true;
     return false;
   }
 
   window.LinkCleaner = window.LinkCleaner || {};
   window.LinkCleaner.PARAMS = PARAMS;
   window.LinkCleaner.PREFIXES = PREFIXES;
+  window.LinkCleaner.customStrip = customStrip;
+  window.LinkCleaner.customKeep = customKeep;
+  window.LinkCleaner.customPrefixes = customPrefixes;
   window.LinkCleaner.shouldStrip = shouldStrip;
+  window.LinkCleaner.setCustomRules = setCustomRules;
   window.LinkCleaner.PARAM_COUNT = PARAMS.size;
 })();

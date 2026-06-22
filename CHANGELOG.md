@@ -5,6 +5,45 @@ All notable changes to Link Cleaner will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-06-22
+
+### Added
+- **Per-rule parameter overrides** — three new rule types:
+  - **Always strip**: extra params (in addition to the 88 in the database)
+  - **Never strip**: protected params (override database, e.g., protect your own `ref` param)
+  - **Custom prefixes**: any param starting with your prefix is stripped (e.g., `myapp_*`)
+  - Precedence: customKeep > built-in prefixes > customPrefixes > customStrip > built-in DB
+- **Options page** (`src/options.html/css/js`) — full-page settings UI with tabs:
+  - **General**: toggle, stats display, reset everything
+  - **Custom Rules**: text areas for strip/keep/prefixes + **live preview**
+  - **Allowlist**: domain editor with pattern-type badges (exact / wildcard / suffix)
+  - **Bulk Cleaner**: paste up to 1000 URLs, get cleaned versions, copy/download as .txt
+  - **Backup**: export to JSON / import from JSON (with format validation)
+  - **About**: version info, project links, how-it-works
+- **Export/import** settings to/from JSON file — cross-device sync made easy
+- **Bulk URL cleaner** — paste a list of URLs, get all cleaned at once
+- **Live preview** in custom rules — type a URL, see what gets stripped instantly
+- **Popup → Options link** — "Open full settings" button in popup footer
+- **Safari Web Extension manifest variant** (`safari/manifest.json`) — reference
+  implementation for Safari 15.4+ (requires Xcode build process; not actively shipped)
+
+### Changed
+- `rules/tracking-params.js` now also exports `customStrip`, `customKeep`,
+  `customPrefixes` Sets + `setCustomRules()` helper
+- `clean-url.js` unchanged signature — rules injected via setCustomRules()
+- `content.js` listens for `customStrip`/`customKeep`/`customPrefixes` storage
+  changes (live propagation to all tabs)
+- `manifest.json` version → 1.1.0, adds `options_ui` field
+
+### Tests
+- **63 unit tests** (`tests/test.js`) — up from 54:
+  - 9 new tests for custom rules (always-strip, never-strip, prefixes, precedence)
+- **20 integration tests** (`tests/test-content.js`) — unchanged
+
+### Total: 83 tests, 0 failures
+
+---
+
 ## [1.0.0] - 2026-06-22
 
 ### Added

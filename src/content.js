@@ -17,17 +17,30 @@
     return;
   }
 
-  let settings = { enabled: true, allowlist: [] };
+  let settings = {
+    enabled: true,
+    allowlist: [],
+    customRules: { strip: [], keep: [], prefixes: [] },
+  };
   let sessionStats = { urlsCleaned: 0, paramsRemoved: 0 };
 
   // ---------------------------------------------------------------------------
   // Settings sync (live updates from popup)
   // ---------------------------------------------------------------------------
   function loadSettings() {
-    chrome.storage.local.get(["enabled", "allowlist"], (data) => {
-      settings.enabled = data.enabled !== false;
-      settings.allowlist = Array.isArray(data.allowlist) ? data.allowlist : [];
-    });
+    chrome.storage.local.get(
+      ["enabled", "allowlist", "customStrip", "customKeep", "customPrefixes"],
+      (data) => {
+        settings.enabled = data.enabled !== false;
+        settings.allowlist = Array.isArray(data.allowlist) ? data.allowlist : [];
+        settings.customRules = {
+          strip: Array.isArray(data.customStrip) ? data.customStrip : [],
+          keep: Array.isArray(data.customKeep) ? data.customKeep : [],
+          prefixes: Array.isArray(data.customPrefixes) ? data.customPrefixes : [],
+        };
+        LC.setCustomRules(settings.customRules);
+      }
+    );
   }
   loadSettings();
 
@@ -55,7 +68,19 @@
       settings.allowlist = Array.isArray(changes.allowlist.newValue)
         ? changes.allowlist.newValue
         : [];
-      // Re-rewrite all anchors (settings changed)
+      rewriteAllAnchors(true);
+    }
+    if (
+      "customStrip" in changes ||
+      "customKeep" in changes ||
+      "customPrefixes" in changes
+    ) {
+      settings.customRules = {
+        strip: Array.isArray(changes.customStrip?.newValue) ? changes.customStrip.newValue : [],
+        keep: Array.isArray(changes.customKeep?.newValue) ? changes.customKeep.newValue : [],
+        prefixes: Array.isArray(changes.customPrefixes?.newValue) ? changes.customPrefixes.newValue : [],
+      };
+      LC.setCustomRules(settings.customRules);
       rewriteAllAnchors(true);
     }
   });

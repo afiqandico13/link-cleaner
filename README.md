@@ -34,9 +34,17 @@ sees a direct visit; nothing leaves your browser.
   - `example.com` → exact match
   - `*.example.com` → any subdomain (not the apex)
   - `.example.com` → apex + all subdomains
+- **Per-rule parameter overrides** (in Options page):
+  - Always strip — add your own tracking params to strip
+  - Never strip — protect specific params from being stripped (override DB)
+  - Custom prefixes — strip any param matching your prefix (e.g., `myapp_*`)
 - **Zero-config**: install, done. Works on every site automatically.
 - **Page action badge** — toolbar icon shows count of cleanable links on the
   current page (`🛡️ 12`). Updates live as you scroll.
+- **Options page** (right-click icon → Options) with 6 tabs:
+  General / Custom Rules / Allowlist / Bulk Cleaner / Backup / About
+- **Bulk URL cleaner** — paste up to 1000 URLs, get cleaned versions, copy/download
+- **Export/import** settings to/from JSON — cross-device sync
 - **Popup preview**: see exactly which params got stripped from the current URL.
 - **Copy / navigate**: copy the cleaned URL to clipboard, or one-click navigate
   to it.

@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Link Cleaner — Options</title>
+  <link rel="stylesheet" href="options.css" />
+</head>
+<body>
+  <header class="hdr">
+    <div class="brand">
+      <span class="logo">🛡️</span>
+      <h1>Link Cleaner</h1>
+      <span class="version" id="version">v1.1.0</span>
+    </div>
+    <p class="subtitle">Full settings — popup gives quick toggle only</p>
+    <nav class="tabs">
+      <a href="#general" class="tab active" data-tab="general">General</a>
+      <a href="#rules" class="tab" data-tab="rules">Custom Rules</a>
+      <a href="#allowlist" class="tab" data-tab="allowlist">Allowlist</a>
+      <a href="#bulk" class="tab" data-tab="bulk">Bulk Cleaner</a>
+      <a href="#backup" class="tab" data-tab="backup">Backup</a>
+      <a href="#about" class="tab" data-tab="about">About</a>
+    </nav>
+  </header>
+
+  <main>
+    <!-- ============================== GENERAL ============================== -->
+    <section id="general" class="panel active">
+      <h2>General</h2>
+
+      <div class="card">
+        <div class="row">
+          <div>
+            <div class="row-title">Enable cleaning</div>
+            <div class="row-sub">Apply on every page automatically</div>
+          </div>
+          <span class="switch">
+            <input type="checkbox" id="enabled-toggle" />
+            <span class="slider"></span>
+          </span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="row">
+          <div>
+            <div class="row-title">Watching <span id="param-count">88</span> tracking params</div>
+            <div class="row-sub">From <a href="#" id="view-db-link">database</a> + your custom rules</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>All-time stats</h3>
+        <div class="stats-grid">
+          <div class="stat">
+            <div class="stat-value" id="stat-urls">0</div>
+            <div class="stat-label">URLs cleaned</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value" id="stat-params">0</div>
+            <div class="stat-label">Params removed</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value" id="stat-cleanings">0</div>
+            <div class="stat-label">Cleanings</div>
+          </div>
+        </div>
+        <button id="reset-stats-btn" class="text-btn">Reset stats</button>
+      </div>
+    </section>
+
+    <!-- ============================== CUSTOM RULES ============================== -->
+    <section id="rules" class="panel">
+      <h2>Custom Rules</h2>
+
+      <div class="card">
+        <div class="row">
+          <div>
+            <div class="row-title">Always strip <span id="strip-count" class="badge">0</span></div>
+            <div class="row-sub">Extra params to strip in addition to the database (one per line, lowercase)</div>
+          </div>
+        </div>
+        <textarea id="custom-strip" rows="6" placeholder="my_custom_param&#10;internal_tracker&#10;junk_param"></textarea>
+      </div>
+
+      <div class="card">
+        <div class="row">
+          <div>
+            <div class="row-title">Never strip <span id="keep-count" class="badge">0</span></div>
+            <div class="row-sub">Params to protect from stripping (override database, one per line, lowercase)</div>
+          </div>
+        </div>
+        <textarea id="custom-keep" rows="6" placeholder="ref&#10;source&#10;lang"></textarea>
+      </div>
+
+      <div class="card">
+        <div class="row">
+          <div>
+            <div class="row-title">Custom prefixes <span id="prefix-count" class="badge">0</span></div>
+            <div class="row-sub">Treat any param starting with these prefixes as tracking (e.g. <code>myapp_</code>)</div>
+          </div>
+        </div>
+        <textarea id="custom-prefixes" rows="4" placeholder="myapp_&#10;company_&#10;tracker_"></textarea>
+      </div>
+
+      <div class="card preview-card">
+        <h3>Preview</h3>
+        <p class="row-sub">Test your custom rules against a URL</p>
+        <input type="text" id="preview-url" placeholder="https://example.com/?utm_source=fb&ref=newsletter&id=1" />
+        <div class="preview-result" id="preview-result"></div>
+      </div>
+
+      <div class="actions">
+        <button id="save-rules-btn" class="btn primary">Save custom rules</button>
+        <span class="save-status" id="save-status"></span>
+      </div>
+    </section>
+
+    <!-- ============================== ALLOWLIST ============================== -->
+    <section id="allowlist" class="panel">
+      <h2>Allowlist</h2>
+
+      <div class="card">
+        <p class="row-sub">Domains where cleaning is disabled. Supports three formats:</p>
+        <ul class="help-list">
+          <li><code>example.com</code> — exact match</li>
+          <li><code>*.example.com</code> — any subdomain (not the apex)</li>
+          <li><code>.example.com</code> — apex + all subdomains</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <form id="allowlist-form" class="input-row">
+          <input type="text" id="allowlist-input" placeholder="example.com or *.example.com" autocomplete="off" spellcheck="false" />
+          <button type="submit" class="btn-icon" aria-label="Add">+</button>
+        </form>
+        <ul id="allowlist-list" class="allowlist-list"></ul>
+      </div>
+    </section>
+
+    <!-- ============================== BULK CLEANER ============================== -->
+    <section id="bulk" class="panel">
+      <h2>Bulk URL Cleaner</h2>
+
+      <div class="card">
+        <p class="row-sub">Paste URLs (one per line) and get cleaned versions. Up to 1000 at a time.</p>
+        <textarea id="bulk-input" rows="10" placeholder="https://example.com/?utm_source=fb&id=1&#10;https://shop.com/?gclid=ABC&q=shoes&#10;..."></textarea>
+        <div class="actions">
+          <button id="bulk-process-btn" class="btn primary">Process</button>
+          <button id="bulk-clear-btn" class="btn secondary">Clear</button>
+          <span class="bulk-info" id="bulk-info"></span>
+        </div>
+      </div>
+
+      <div class="card" id="bulk-results-card" hidden>
+        <h3>Results</h3>
+        <textarea id="bulk-output" rows="10" readonly></textarea>
+        <div class="actions">
+          <button id="bulk-copy-btn" class="btn primary">Copy all</button>
+          <button id="bulk-download-btn" class="btn secondary">Download .txt</button>
+        </div>
+        <p class="row-sub bulk-summary" id="bulk-summary"></p>
+      </div>
+    </section>
+
+    <!-- ============================== BACKUP ============================== -->
+    <section id="backup" class="panel">
+      <h2>Backup &amp; Sync</h2>
+
+      <div class="card">
+        <p class="row-sub">Export your settings to a JSON file, or import from one. Useful for syncing across devices.</p>
+        <div class="actions">
+          <button id="export-btn" class="btn primary">Export to JSON</button>
+          <button id="import-btn" class="btn secondary">Import from JSON</button>
+          <input type="file" id="import-file" accept="application/json" hidden />
+        </div>
+        <p class="row-sub" id="backup-status"></p>
+      </div>
+
+      <div class="card info">
+        <h3>What's exported</h3>
+        <ul class="help-list">
+          <li><code>enabled</code> — on/off toggle</li>
+          <li><code>allowlist</code> — domain patterns</li>
+          <li><code>customStrip / customKeep / customPrefixes</code> — custom rules</li>
+          <li><code>stats</code> — totals (URLs cleaned, params removed)</li>
+        </ul>
+        <p class="row-sub">Stats aren't strictly necessary for cross-device sync, but we include them so your backup is a complete snapshot.</p>
+      </div>
+    </section>
+
+    <!-- ============================== ABOUT ============================== -->
+    <section id="about" class="panel">
+      <h2>About</h2>
+
+      <div class="card">
+        <p>
+          <strong>Link Cleaner</strong> is a privacy-first browser extension
+          that strips 88+ tracking parameters from URLs before navigation.
+          Zero data collection. Open source (MIT).
+        </p>
+        <ul class="help-list">
+          <li>🌐 GitHub: <a href="https://github.com/afiqandico13/link-cleaner" target="_blank">afiqandico13/link-cleaner</a></li>
+          <li>📦 Database: <span id="param-count-2">88</span> tracked params + prefix patterns</li>
+          <li>🔧 Manifest V3 (Chrome, Edge, Brave, Firefox 109+)</li>
+          <li>📝 License: MIT</li>
+          <li>👤 Made with 🛡️ by <a href="https://github.com/afiqandico13" target="_blank">@afiqandico13</a></li>
+        </ul>
+      </div>
+
+      <div class="card info">
+        <h3>How it works</h3>
+        <p class="row-sub">
+          Content scripts run on every page. They intercept link clicks, rewrite
+          anchor <code>href</code> attributes, and watch for new links via
+          MutationObserver. When you click a link, the tracking params have
+          already been stripped — you navigate to a clean URL.
+        </p>
+        <p class="row-sub">
+          Settings are stored locally (<code>chrome.storage.local</code>) and
+          sync live to all open tabs. No data leaves your browser.
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Link Cleaner v1.0.0 · <a href="#" id="reset-all-btn">Reset everything to defaults</a></p>
+  </footer>
+
+  <script src="rules/tracking-params.js"></script>
+  <script src="src/clean-url.js"></script>
+  <script src="src/options.js"></script>
+</body>
+</html>

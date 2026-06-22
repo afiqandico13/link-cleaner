@@ -241,9 +241,23 @@
     wireNavigate();
     wireAllowlist();
     wireResetStats();
+    wireOptionsLink();
     renderCurrentTab(settings);
     renderStats();
     renderAllowlist(settings);
     renderParamGrid();
   });
+
+  function wireOptionsLink() {
+    const link = document.getElementById("open-options");
+    if (!link) return;
+    link.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (chrome.runtime.openOptionsPage) {
+        chrome.runtime.openOptionsPage();
+      } else {
+        chrome.tabs.create({ url: chrome.runtime.getURL("src/options.html") });
+      }
+    });
+  }
 })();
