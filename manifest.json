@@ -1,0 +1,67 @@
+{
+  "manifest_version": 3,
+  "name": "Link Cleaner",
+  "version": "1.0.0",
+  "description": "Strips tracking parameters from URLs (utm, fbclid, gclid, igshid, etc.) before navigation. Privacy-first, zero data collection, works offline.",
+  "author": "Afiq Andico Pangimpian",
+  "homepage_url": "https://github.com/afiqandico13/link-cleaner",
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "action": {
+    "default_popup": "src/popup.html",
+    "default_title": "Link Cleaner",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": [
+        "rules/tracking-params.js",
+        "src/clean-url.js",
+        "src/content.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["rules/tracking-params.js", "src/clean-url.js"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+L",
+        "mac": "Command+Shift+L"
+      },
+      "description": "Open Link Cleaner popup"
+    }
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "link-cleaner@afiqandico13.github.io",
+      "strict_min_version": "109.0"
+    }
+  }
+}

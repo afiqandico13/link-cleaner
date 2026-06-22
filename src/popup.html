@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Link Cleaner</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <header class="hdr">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">🛡️</span>
+      <h1>Link Cleaner</h1>
+    </div>
+    <p class="subtitle">Strip tracking params before navigation</p>
+  </header>
+
+  <main>
+    <!-- Toggle card -->
+    <section class="card">
+      <label class="row toggle-row">
+        <div>
+          <div class="row-title">Enable cleaning</div>
+          <div class="row-sub">Apply on every page automatically</div>
+        </div>
+        <span class="switch">
+          <input type="checkbox" id="enabled-toggle" />
+          <span class="slider"></span>
+        </span>
+      </label>
+    </section>
+
+    <!-- Current tab card -->
+    <section class="card">
+      <h2 class="card-title">Current tab</h2>
+      <div class="url-row">
+        <div class="url-block original">
+          <div class="url-label">Original</div>
+          <div class="url-text" id="original-url">loading…</div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="url-block cleaned">
+          <div class="url-label">Cleaned</div>
+          <div class="url-text" id="cleaned-url">—</div>
+        </div>
+      </div>
+      <div id="removed-params" class="removed-params"></div>
+      <div class="action-row">
+        <button id="copy-btn" class="btn primary">📋 Copy cleaned</button>
+        <button id="navigate-btn" class="btn secondary">↗ Open cleaned</button>
+      </div>
+    </section>
+
+    <!-- Stats card -->
+    <section class="card">
+      <div class="card-title-row">
+        <h2 class="card-title">Stats</h2>
+        <button id="reset-stats-btn" class="link-btn">Reset</button>
+      </div>
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-value" id="stat-urls">0</div>
+          <div class="stat-label">URLs cleaned</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="stat-params">0</div>
+          <div class="stat-label">Params removed</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Allowlist card -->
+    <section class="card">
+      <h2 class="card-title">Allowlist</h2>
+      <p class="help-text">Domains where cleaning is disabled (e.g., your own analytics).</p>
+      <form id="allowlist-form" class="allowlist-input">
+        <input type="text" id="allowlist-input" placeholder="example.com" autocomplete="off" spellcheck="false" />
+        <button type="submit" class="btn-icon" aria-label="Add">+</button>
+      </form>
+      <ul id="allowlist-list" class="allowlist-list"></ul>
+    </section>
+
+    <!-- Info card -->
+    <section class="card info">
+      <h2 class="card-title">Watching <span id="param-count">60+</span> trackers</h2>
+      <details>
+        <summary>View full list</summary>
+        <p class="param-grid" id="param-grid"></p>
+      </details>
+    </section>
+  </main>
+
+  <footer>
+    <p>Made with 🛡️ by <a href="https://github.com/afiqandico13" target="_blank">@afiqandico13</a> · v1.0.0</p>
+  </footer>
+
+  <script src="rules/tracking-params.js"></script>
+  <script src="src/clean-url.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
