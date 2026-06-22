@@ -5,6 +5,29 @@ All notable changes to Link Cleaner will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2026-06-23
+
+### Fixed
+- **Badge clearing bug**: when extension is toggled OFF via popup,
+  `rewriteAllAnchors()` early-returned without calling `reportBadge()`,
+  so the badge stayed showing the old count. Now resets counter and
+  reports 0 immediately when disabled.
+- **Whitespace in keys**: `?%20utm_source%20=x` (URLSearchParams
+  decodes to ` utm_source ` with spaces) was not being stripped.
+  `shouldStrip()` now trims and lowercases keys before lookup.
+- **DRY violation in badge detection**: `onAllowlistedDomain` was
+  duplicating `matchesHostPattern` logic. Now uses `LC.matchesHostPattern()`
+  for single source of truth.
+- **Dead code**: removed unused `sessionStats` variable from content.js
+  (was initialized + incremented but never read or sent).
+
+### Tests
+- 87 unit tests (was 82, +5 for regressions)
+- 22 integration tests (unchanged)
+- 109 total, 0 failures
+
+---
+
 ## [1.2.0] - 2026-06-22
 
 ### Added

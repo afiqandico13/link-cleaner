@@ -105,7 +105,9 @@
 
   function shouldStrip(key) {
     if (!key) return false;
-    const lower = String(key).toLowerCase();
+    // Trim whitespace (URLSearchParams decodes %20 → space) and lowercase
+    const lower = String(key).trim().toLowerCase();
+    if (!lower) return false;
     if (customKeep.has(lower)) return false;
     for (const p of PREFIXES) {
       if (lower.startsWith(p)) return true;

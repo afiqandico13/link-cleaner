@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Link Cleaner",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Strips tracking parameters from URLs (utm, fbclid, gclid, igshid, etc.) before navigation. Privacy-first, zero data collection, works offline.",
   "author": "Afiq Andico Pangimpian",
   "homepage_url": "https://github.com/afiqandico13/link-cleaner",

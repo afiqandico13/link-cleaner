@@ -279,6 +279,27 @@ console.log("\n=== Custom rules: precedence ===");
 }
 
 // ============================================================================
+// BUG FIX REGRESSIONS (v1.2.1)
+// ============================================================================
+console.log("\n=== Bug fix: whitespace in keys trimmed ===");
+{
+  LC.setCustomRules({ strip: [], keep: [], prefixes: [] });
+  // %20 in keys decodes to space — should still be recognized as tracking
+  const r = clean("https://example.com/?%20utm_source%20=x&id=1");
+  assert("whitespace-padded utm_source stripped", !r.cleaned.includes("utm_source"),
+    `cleaned=${r.cleaned}`);
+}
+
+console.log("\n=== Bug fix: matchesHostPattern for badge detection (DRY) ===");
+{
+  // matchesHostPattern should work for all 3 forms
+  assert("matchesHostPattern: exact", LC.matchesHostPattern("example.com", "example.com"));
+  assert("matchesHostPattern: wildcard sub", LC.matchesHostPattern("a.example.com", "*.example.com"));
+  assert("matchesHostPattern: suffix apex+sub", LC.matchesHostPattern("a.example.com", ".example.com"));
+  assert("matchesHostPattern: wildcard excludes apex", !LC.matchesHostPattern("example.com", "*.example.com"));
+}
+
+// ============================================================================
 // PER-DOMAIN RULES (v1.2.0)
 // ============================================================================
 console.log("\n=== Per-domain rules: override global ===");

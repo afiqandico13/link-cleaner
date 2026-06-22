@@ -220,6 +220,37 @@ const tick = (ms = 50) => new Promise((r) => setTimeout(r, ms));
       `href=${a.getAttribute("href")}`);
   }
 
+  console.log("\n=== Bug fix: badge clears when extension toggled OFF mid-session ===");
+  {
+    const { window, document } = buildSandbox();
+    loadExtension(window);
+    await tick(20);
+
+    // Pre-populate: page has trackers, cleaning is ON, badge count > 0
+    const a1 = document.createElement("a");
+    a1.href = "https://shop.com/?utm_source=ig&id=1";
+    document.body.appendChild(a1);
+    await tick(50);
+    assert("enabled: anchor cleaned", !a1.getAttribute("href").includes("utm_source"));
+
+    // Now simulate user toggling OFF via popup (via chrome.storage.local.set which fires onChanged)
+    await new Promise((resolve) => {
+      window.chrome.storage.local.set({ enabled: false }, resolve);
+    });
+    await tick(50);
+
+    // Verify: add a new anchor that WOULD have trackers
+    const a2 = document.createElement("a");
+    a2.href = "https://shop.com/?utm_source=fb&id=2";
+    document.body.appendChild(a2);
+    await tick(50);
+
+    // The new anchor should NOT be cleaned (because enabled is false)
+    assert("after toggle OFF: new anchor NOT cleaned",
+      a2.getAttribute("href").includes("utm_source"),
+      `href=${a2.getAttribute("href")}`);
+  }
+
   console.log("\n=== Allowlist: only matching domains skipped ===");
   {
     const { window, document } = buildSandbox();

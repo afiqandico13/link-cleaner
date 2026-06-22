@@ -23,7 +23,6 @@
     customRules: { strip: [], keep: [], prefixes: [] },
     perDomainRules: {},
   };
-  let sessionStats = { urlsCleaned: 0, paramsRemoved: 0 };
 
   // ---------------------------------------------------------------------------
   // Settings sync (live updates from popup)
@@ -142,16 +141,20 @@
   }
 
   function rewriteAllAnchors(force) {
-    if (!settings.enabled) return;
     resetCounter();
 
-    // Detect allowlisted domain for badge styling
+    if (!settings.enabled) {
+      // Disabled: clear badge immediately
+      onAllowlistedDomain = false;
+      reportBadge();
+      return;
+    }
+
+    // Detect allowlisted domain for badge styling (uses LC.matchesHostPattern for DRY)
     try {
       onAllowlistedDomain = settings.allowlist.some((p) => {
-        const host = location.hostname.toLowerCase();
-        if (p.startsWith("*.")) return host.endsWith("." + p.slice(2));
-        if (p.startsWith(".")) return host === p.slice(1) || host.endsWith(p);
-        return host === p;
+        try { return LC.matchesHostPattern(location.hostname, p); }
+        catch (_) { return false; }
       });
     } catch (_) { onAllowlistedDomain = false; }
 
@@ -215,8 +218,6 @@
   });
 
   function navigate(originalUrl, cleanedUrl) {
-    sessionStats.urlsCleaned += 1;
-    sessionStats.paramsRemoved += (cleanedUrl.match(/[?&]/g) || []).length;
     chrome.runtime.sendMessage(
       {
         type: "link-cleaned",
